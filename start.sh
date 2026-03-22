@@ -1,38 +1,30 @@
 #!/bin/bash
 
-# Password VNC (từ env, fallback mặc định)
+# Set VNC password từ env var (Railway Variables)
 VNC_PASS=${VNC_PASSWORD:-"railway123"}
 echo -e "${VNC_PASS}\n${VNC_PASS}" | vncpasswd -f > ~/.vnc/passwd
 chmod 600 ~/.vnc/passwd
 
-# Khởi động VNC server (display :1, no password auth nếu muốn, nhưng dùng password an toàn hơn)
+# Start VNC server (display :1)
 vncserver :1 -geometry 1280x800 -depth 24 -SecurityTypes VncAuth &
 
-sleep 5  # Đợi VNC ready
+sleep 5  # Wait for VNC to start
 
-# Khởi động noVNC (websockify proxy VNC 5901 -> HTTP 8080)
+# Start noVNC proxy (VNC 5901 -> HTTP 8080)
 websockify --web=/usr/share/novnc/ 8080 localhost:5901 &
 
-# Mở 4 cửa sổ Chrome riêng (profile riêng, nhiều tab mỗi cái - thay URL bằng cái bạn cần farm)
-# Cửa sổ 1: nhiều tab chính
+# Start multiple Chrome windows/tabs (thay URL bằng cái bạn cần, ví dụ farm tab)
 google-chrome-stable \
-  --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome1 \
+  --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run \
+  --user-data-dir=/tmp/chrome-profile1 \
   --start-maximized https://example.com https://google.com https://youtube.com &
 
-# Cửa sổ 2: tab khác
 google-chrome-stable \
-  --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome2 \
+  --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run \
+  --user-data-dir=/tmp/chrome-profile2 \
   --new-window https://facebook.com https://twitter.com &
 
-# Cửa sổ 3: thêm nữa
-google-chrome-stable \
-  --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome3 \
-  --new-window https://site3.com https://site4.com &
+# Thêm bao nhiêu profile tùy ý để giống dãy tab/icon lặp lại
 
-# Cửa sổ 4: lặp lại kiểu dãy icon nếu muốn
-google-chrome-stable \
-  --no-sandbox --disable-gpu --disable-dev-shm-usage --user-data-dir=/tmp/chrome4 \
-  --new-window https://another-site.com &
-
-# Giữ container sống (tail logs hoặc sleep infinity)
+# Keep container running
 tail -f /dev/null
